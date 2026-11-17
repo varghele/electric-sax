@@ -1,0 +1,218 @@
+# Component catalog – single source of truth for every bought part's geometry.
+#
+# Units: mm, grams. Every dimension carries a confidence level so nobody mistakes a guess for a fact:
+#   measured   – measured on the real part with calipers (the only level that should drive final CAD)
+#   datasheet  – manufacturer drawing / official docs
+#   product    – shop listing
+#   photo      – estimated from product photos
+#   derived    – inferred from another model (e.g. Nerd-Sniped's clamp)
+#   unknown    – placeholder; must be measured
+#
+# When you measure a part: update `dims`, set `confidence: measured`, add the date to `measured_on`,
+# and clear the fields you covered from `to_measure`. Proxy shapes for fit checks come from `proxy`.
+#
+# proxy kinds:
+#   box:    size [x, y, z]            (z = height above the mounting surface)
+#   cyl:    d, h
+#   panel:  flange [w, h, t] in front of the panel, body [w, h, depth] behind it, hole d
+#   ring:   od, id, h
+
+parts:
+
+  # ---------------- instrument ----------------
+  emeo_mk1:
+    name: EMEO digital saxophone MK1
+    dims: {length: 500, weight_g: 1700, bottom_od: 57.0, od_at_100_130mm: 50.5}
+    confidence: {length: product, weight_g: product, bottom_od: derived, od_at_100_130mm: derived}
+    source: emeo.music specs; diameters derived from Nerd-Sniped clamp fits
+    notes: >
+      USB-C on the bottom cap (MK1 needs a USB-A -> USB-C cable, C-to-C not supported).
+      Bottom cap has a drain hole. Neck is a friction fit with O-rings.
+    to_measure:
+      - bottom end OD and how far it stays free of keys
+      - OD at 100-130 mm above the bottom end, and which side is free of keys there
+      - USB-C port: orientation relative to the keys, and space for an angled plug
+      - lowest key / key guard: height above the bottom end and how far it protrudes
+      - thumb rest and strap ring positions
+      - length without neck
+
+  s_bow_v3:
+    name: S-bow (own design, printed)
+    dims: {tenon_od: 14.0, bore: 10.0, tenon_length: 13.0, arm_bore: 11.0, mouthpiece_end_od: 16.0}
+    confidence: {tenon_od: derived, bore: derived, tenon_length: derived, arm_bore: derived, mouthpiece_end_od: derived}
+    source: cad/vendor/s-bow/s_bow_v3.3mf (sections measured in the mesh)
+
+  # ---------------- power ----------------
+  cell_18650:
+    name: Samsung INR18650-35E (flat top)
+    qty: 4
+    dims: {d: 18.5, length: 65.0, weight_g: 50}
+    confidence: datasheet
+    proxy: {kind: cyl, d: 18.5, h: 65.0}
+
+  keystone_1047:
+    name: Keystone 1047 dual 18650 holder, solder lugs
+    qty: 2
+    dims: {x: 77.0, y: 39.8, z: 14.9, mount_hole_d: 3.18, mount_hole_spacing: 55.25}
+    confidence: datasheet
+    notes: 4 lugs, each cell separately contacted (wire 2S2P yourself). Contacts are tin-nickel plated stainless.
+    proxy: {kind: box, size: [77.0, 39.8, 14.9]}
+
+  bms_2s:
+    name: 2S BMS "Balance Version" (Amazon B07T2WKQSQ)
+    dims: {x: 48.0, y: 20.0, z: 3.4}
+    confidence: product
+    notes: >
+      Pads: 0V=B-, 4.2V=BM, 8.4V=B+, P-, P+. Over-discharge cutoff only ~2.3-2.6 V/cell
+      (third-party data) – the Pololu enable cutoffs protect the pack earlier.
+    proxy: {kind: box, size: [48.0, 20.0, 3.4]}
+    to_measure: [height incl. tallest component, pad positions]
+
+  charger_2s:
+    name: Adeept 2S USB-C boost charger (board MRB045)
+    dims: {x_incl_usb: 37.0, y: 17.0, z: 6.3, usb_overhang: 1.7, mount_hole_spacing: 13.6, mount_hole_d: 1.8}
+    confidence: {x_incl_usb: product, y: product, z: photo, usb_overhang: photo, mount_hole_spacing: photo, mount_hole_d: photo}
+    notes: Plain 5 V input only (no USB-PD). ~1.1 A charge -> ~6 h for the pack. LEDs CR (charging) / OK (full).
+    proxy: {kind: box, size: [37.0, 17.0, 6.3]}
+    to_measure: [total height incl. USB-C socket, USB-C socket centre height above PCB, mounting hole positions]
+
+  level_indicator_2s:
+    name: 2S battery level indicator with push button (Amazon B0CHRHYMS5)
+    dims: {}
+    confidence: unknown
+    to_measure: [board size, button position and height, LED window position]
+
+  fuse_holder:
+    name: TRU TC-Mini FK1 inline fuse holder (5 A mini blade)
+    dims: {length: 54.5, w: 11.0, h: 11.0, lead_length: 130}
+    confidence: datasheet
+    proxy: {kind: box, size: [54.5, 11.0, 11.0]}
+
+  xt30_pair:
+    name: XT30 connector pair, mated
+    dims: {length: 32.0, w: 10.0, h: 5.5}
+    confidence: unknown
+    proxy: {kind: box, size: [32.0, 10.0, 5.5]}
+    to_measure: [mated length incl. solder cups]
+
+  d36v50f5:
+    name: Pololu D36V50F5 (5 V / 5.5 A step-down, Pi rail)
+    dims: {x: 25.4, y: 25.4, z: 9.5, weight_g: 7}
+    confidence: datasheet
+    proxy: {kind: box, size: [25.4, 25.4, 9.5]}
+
+  d36v28f5:
+    name: Pololu D36V28F5 (5 V / 3.2 A step-down, LED/display rail)
+    dims: {x: 20.3, y: 17.8}
+    confidence: product
+    proxy: {kind: box, size: [20.3, 17.8, 6.0]}
+    to_measure: [height]
+
+  u3v40f9:
+    name: Pololu U3V40F9 (9 V step-up, MIDI rail)
+    dims: {}
+    confidence: unknown
+    notes: Max input 9 V (fine for 8.4 V pack). EN does not fully disconnect – the MIDI toggle sits BEFORE it.
+    to_measure: [x, y, z]
+
+  ina219:
+    name: INA219 breakout CJMCU-219
+    dims: {}
+    confidence: unknown
+    to_measure: [x, y, z incl. terminal block if fitted]
+
+  # ---------------- Pi stack ----------------
+  raspberry_pi_5:
+    name: Raspberry Pi 5
+    dims: {x: 85.0, y: 56.0, z_tallest: 19.5, mount_hole_spacing: [58.0, 49.0]}
+    confidence: datasheet
+    proxy: {kind: box, size: [85.0, 56.0, 19.5]}
+
+  active_cooler:
+    name: Raspberry Pi 5 Active Cooler
+    dims: {x: 63.5, y: 42.5, z: 13.7}
+    confidence: datasheet
+    notes: 13.7 mm probably includes the push-pin tips below the plate.
+
+  gpio_riser_16:
+    name: DSLRKIT 16 mm GPIO riser + M2.5 x 16 standoffs
+    dims: {standoff: 16.0}
+    confidence: photo
+    to_measure: [real standoff length, header pin length]
+
+  dac_pro:
+    name: Raspberry Pi DAC Pro
+    dims: {x: 65.0, y: 57.0, mount_hole_spacing: [58.0, 49.0], headphone_jack_x: 53.2}
+    confidence: datasheet
+    notes: >
+      Jacks on the long edge opposite the GPIO header. Headphone signals on P6
+      (1 L, 2 GND, 3 R, 4 GND, 5 detect); 0-2 V line out on P1. Zynthian soundcard: "IQAudio DAC Pro".
+    to_measure: [jack heights]
+
+  pi_stack:
+    name: Pi 5 + Active Cooler + 16 mm riser + DAC Pro, assembled
+    dims: {x: 85.0, y: 56.0, z: 40.0}
+    confidence: unknown
+    proxy: {kind: box, size: [85.0, 56.0, 40.0]}
+    to_measure: [total height from Pi PCB bottom to top of tallest DAC part, footprint incl. overhanging jacks, cable exits]
+
+  # ---------------- MIDI / LED ----------------
+  h2midi_pro:
+    name: CME H2MIDI Pro
+    dims: {x: 75.0, y: 38.0, z: 33.0}
+    confidence: datasheet
+    notes: 9 V centre-negative 5.5/2.1, ~0.3 W. USB-A = host (EMEO), USB-C = device (Pi). Routing via HxMIDI Tools.
+    proxy: {kind: box, size: [75.0, 38.0, 33.0]}
+    to_measure: [clearance needed for the plugged-in USB-A, USB-C and DC plugs]
+
+  xiao_rp2040:
+    name: Seeed XIAO RP2040
+    dims: {x: 21.0, y: 17.8, z: 3.5}
+    confidence: datasheet
+    proxy: {kind: box, size: [21.0, 17.8, 3.5]}
+
+  ws2812_ring16:
+    name: WS2812 ring, 16 LEDs (Botland, CJMCU-2812-16)
+    dims: {od: 44.0, id: 34.0, h: 3.2}
+    confidence: {od: product, id: product, h: unknown}
+    notes: Pads on the back near the outer edge (GND, VCC, OUT / IN, VCC, GND).
+    proxy: {kind: ring, od: 44.0, id: 34.0, h: 3.2}
+    to_measure: [PCB thickness + LED height, pad positions]
+
+  tx02:
+    name: midiBeam v2 TX02 transmitter
+    dims: {x: 62.0, y: 48.0, z: 15.0, cable_length: 150}
+    confidence: measured
+    notes: Cable leaves the 15 mm side, offset; on/off switch top-right on the large face (cable top-left); LEDs + knob in the middle; battery door on the back.
+    proxy: {kind: box, size: [62.0, 48.0, 15.0]}
+
+  # ---------------- panel parts ----------------
+  toggle_mts102:
+    name: TRU mini toggle switch ON-ON (M6 x 0.5)
+    qty: 3
+    dims: {hole: 6.2, body: [12.5, 6.5, 9.5], depth_behind_panel: 13.5}
+    confidence: datasheet
+    proxy: {kind: panel, flange: [9.0, 9.0, 2.0], body: [12.5, 6.5, 13.5], hole: 6.2}
+    to_measure: [best hole size from the gauge (6.2 / 6.4 / 6.7)]
+
+  button_gq16f:
+    name: TRU GQ16F 16 mm button, green LED ring (Conrad 701880)
+    dims: {hole: 16.0, head_d: 19.0, max_panel: 6.0, led_vf: 2.8, led_if_ma: 20}
+    confidence: {hole: datasheet, head_d: product, max_panel: datasheet, led_vf: product, led_if_ma: product}
+    notes: No built-in LED resistor – use 150 ohm from 5 V.
+    proxy: {kind: panel, flange: [19.0, 19.0, 2.0], body: [16.0, 16.0, 35.0], hole: 16.2}
+    to_measure: [depth behind panel incl. lugs, lug layout]
+
+  jack_hicon_35:
+    name: Hicon HI-J35SEFD 3.5 mm stereo jack, D-size (headphones)
+    dims: {flange: [26.0, 31.0], depth_behind_panel: 20.0}
+    confidence: {flange: derived, depth_behind_panel: photo}
+    proxy: {kind: panel, flange: [31.0, 26.0, 1.6], body: [22.0, 22.0, 20.0], hole: 24.2}
+    to_measure: [depth behind panel, max panel thickness]
+
+  midi_socket_d:
+    name: Thomann MIDI panel socket, D-size
+    dims: {depth_behind_panel: 22.0}
+    confidence: photo
+    proxy: {kind: panel, flange: [26.0, 31.0, 1.6], body: [22.0, 22.0, 22.0], hole: 24.2}
+    to_measure: [flange size, depth incl. solder lugs]

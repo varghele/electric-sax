@@ -1,0 +1,8 @@
+# Additions to /boot/firmware/config.txt (Zynthian may manage some of these via webconf –
+# prefer the webconf soundcard setting and only add what it doesn't set).
+
+# Raspberry Pi DAC Pro (formerly IQaudio DAC Pro). In Zynthian webconf choose "IQAudio DAC Pro".
+dtoverlay=rpi-dacpro
+
+# I2C for the INA219 battery monitor (address 0x40; DAC Pro codec is 0x4c)
+dtparam=i2c_arm=on

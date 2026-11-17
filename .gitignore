@@ -1,0 +1,12 @@
+# build output – regenerate with `cd cad && python build.py`
+cad/build/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# slicer output
+*.gcode
+*.bgcode
+
+.DS_Store

@@ -1,0 +1,21 @@
+# Where each catalog part sits in the bell. Used by `python build.py --fit` to check clearances.
+#
+# panel: parts mounted through a face of part B. (phi, y, v) as in esax/bell.py:
+#   phi 90 = player side, 270 = audience side; y = height on the straight leg; v = offset across the face.
+#   rot: degrees the proxy body is turned about the panel normal.
+#   MUST match the cutouts in esax/bell.py – the fit check warns if a hole is missing.
+#
+# internal: free-placed parts (electronics sled). pos = centre in the global frame (mm),
+#   x_axis / z_axis = where the proxy's own x and z axes point. Filled in once the sled is designed.
+
+panel:
+  - {id: toggle_midi,    part: toggle_mts102,  phi: 90,  y: 28,  v: -15}
+  - {id: toggle_pi,      part: toggle_mts102,  phi: 90,  y: 28,  v: 0}
+  - {id: toggle_led,     part: toggle_mts102,  phi: 90,  y: 28,  v: 15}
+  - {id: pi_button,      part: button_gq16f,   phi: 90,  y: 52,  v: 0}
+  - {id: headphones,     part: jack_hicon_35,  phi: 90,  y: 82,  v: 0, rot: 90}
+  - {id: midi_out,       part: midi_socket_d,  phi: 270, y: 32,  v: 0}
+
+internal: []
+  # example (fill in once measured):
+  # - {id: battery_1, part: keystone_1047, pos: [-116, -40, 0], x_axis: [0, 1, 0], z_axis: [1, 0, 0]}

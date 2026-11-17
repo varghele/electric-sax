@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>EMEO hex bell – V1 preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,400..700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#1d2127; --bg-hi:#343a42; --ink:#e9e6df; --ink-dim:#a3a7ad; --panel:rgba(24,28,33,.78);
+  --line:rgba(233,230,223,.14); --brass:#c19a4b; --glow:#4fd18b; --asa:#3a3e45;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){
+  --bg:#dfe1e4; --bg-hi:#f4f5f6; --ink:#1b1e22; --ink-dim:#5b6068; --panel:rgba(244,245,246,.82); --line:rgba(27,30,34,.14);
+}}
+:root[data-theme="dark"]{ --bg:#1d2127; --bg-hi:#343a42; --ink:#e9e6df; --ink-dim:#a3a7ad; --panel:rgba(24,28,33,.78); --line:rgba(233,230,223,.14);}
+html{scroll-padding-top:env(safe-area-inset-top,0px); height:100%}
+*{box-sizing:border-box}
+body{margin:0; height:100%; overflow:hidden; color:var(--ink);
+  font-family:"Archivo",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  background:radial-gradient(120% 90% at 55% 30%, var(--bg-hi) 0%, var(--bg) 62%); }
+#stage{position:fixed; inset:0}
+canvas{display:block; touch-action:none}
+.head{position:fixed; left:clamp(16px,3vw,36px); top:calc(env(safe-area-inset-top,0px) + clamp(14px,3vh,32px)); max-width:30ch; pointer-events:none}
+.head h1{margin:0; font-weight:650; font-stretch:78%; font-size:clamp(28px,4.2vw,52px); line-height:.95; letter-spacing:-.01em}
+.head p{margin:.6em 0 0; color:var(--ink-dim); font-size:15px; line-height:1.45}
+.panel{position:fixed; right:clamp(12px,2vw,28px); top:calc(env(safe-area-inset-top,0px) + clamp(12px,3vh,28px)); width:min(290px,calc(100vw - 24px));
+  background:var(--panel); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); border:1px solid var(--line); border-radius:14px; padding:14px 14px 10px;
+  max-height:calc(100% - 120px); overflow:auto}
+.panel h2{font-size:14px; font-weight:600; margin:2px 2px 8px; color:var(--ink-dim)}
+.part{display:grid; grid-template-columns:18px 1fr auto; align-items:center; gap:10px; padding:7px 4px; border-top:1px solid var(--line); cursor:pointer; font-size:14px}
+.part:first-of-type{border-top:none}
+.part input{position:absolute; opacity:0; pointer-events:none}
+.sw{width:14px; height:14px; border-radius:4px; border:1px solid var(--line)}
+.part .size{color:var(--ink-dim); font-size:12px; font-stretch:85%}
+.part.off{opacity:.42}
+.part:focus-within{outline:2px solid var(--glow); outline-offset:2px; border-radius:6px}
+.row{display:flex; align-items:center; gap:10px; margin:12px 2px 4px; font-size:14px}
+.row input[type=range]{flex:1; accent-color:var(--glow)}
+.views{position:fixed; left:50%; transform:translateX(-50%); bottom:calc(env(safe-area-inset-bottom,0px) + 18px); display:flex; gap:6px;
+  background:var(--panel); border:1px solid var(--line); border-radius:999px; padding:5px; backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); flex-wrap:wrap; justify-content:center; max-width:calc(100vw - 24px)}
+.views button{font:inherit; font-size:14px; color:var(--ink); background:transparent; border:0; padding:8px 14px; border-radius:999px; cursor:pointer}
+.views button[aria-pressed=true]{background:var(--ink); color:var(--bg)}
+.views button:focus-visible,.toggle:focus-visible{outline:2px solid var(--glow); outline-offset:2px}
+.toggle{font:inherit; font-size:13px; color:var(--ink); background:transparent; border:1px solid var(--line); border-radius:8px; padding:6px 10px; cursor:pointer}
+.toggle[aria-pressed=true]{border-color:var(--glow); color:var(--glow)}
+.note{color:var(--ink-dim); font-size:12px; line-height:1.4; margin:10px 2px 2px}
+#load{position:fixed; inset:0; display:grid; place-items:center; color:var(--ink-dim); font-size:15px}
+@media (max-width:640px){ .head{max-width:60vw} .head p{display:none} .panel{top:auto; bottom:calc(env(safe-area-inset-bottom,0px) + 74px); max-height:38vh} }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div id="load">Loading the model…</div>
+<div class="head"><h1>EMEO hex bell</h1><p>Version 1 on your EMEO with the S-bow. Drag to orbit, scroll or pinch to zoom.</p></div>
+<aside class="panel" aria-label="Parts">
+  <h2>Parts</h2>
+  <div id="parts"></div>
+  <div class="row"><label for="ex">Explode</label><input id="ex" type="range" min="0" max="1" step="0.01" value="0"></div>
+  <div class="row"><button class="toggle" id="led" aria-pressed="true">LED ring</button><button class="toggle" id="sax" aria-pressed="true">EMEO + S-bow</button></div>
+  <p class="note">Switches, jacks and the MIDI socket are drawn as simple stand-ins. The electronics inside follow in the next version.</p>
+</aside>
+<nav class="views" aria-label="Camera views">
+  <button data-v="q" aria-pressed="true">Three-quarter</button>
+  <button data-v="p" aria-pressed="false">Player side</button>
+  <button data-v="a" aria-pressed="false">Audience side</button>
+  <button data-v="f" aria-pressed="false">Into the bell</button>
+</nav>
+<script id="data" type="application/json">__DATA__</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function(){
+const D = JSON.parse(document.getElementById('data').textContent);
+const stage = document.getElementById('stage');
+const renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.outputEncoding = THREE.sRGBEncoding; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
+stage.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(32, 1, 5, 6000);
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.dampingFactor = 0.08; controls.target.set(-55, 170, 0);
+
+scene.add(new THREE.HemisphereLight(0xf2efe8, 0x2a2d33, 0.75));
+const key = new THREE.DirectionalLight(0xfff4e2, 1.25); key.position.set(-500, 700, 600); scene.add(key);
+const rim = new THREE.DirectionalLight(0xcfe3ff, 0.7); rim.position.set(400, 300, -700); scene.add(rim);
+const fill = new THREE.DirectionalLight(0xffffff, 0.35); fill.position.set(300, -200, 500); scene.add(fill);
+
+function b64(s, T){ const bin = atob(s); const u = new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i); return new T(u.buffer); }
+function geo(m){
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(b64(m.v, Float32Array), 3));
+  g.setIndex(new THREE.BufferAttribute(b64(m.f, Uint32Array), 1));
+  const n = g.toNonIndexed(); n.computeVertexNormals(); return n;
+}
+const asa = new THREE.MeshStandardMaterial({color:0x3a3e45, roughness:0.62, metalness:0.05});
+const asaLight = new THREE.MeshStandardMaterial({color:0x4a4f57, roughness:0.6, metalness:0.05});
+const white = new THREE.MeshStandardMaterial({color:0xe8e6e0, roughness:0.55, metalness:0.0});
+const brass = new THREE.MeshStandardMaterial({color:0xc19a4b, roughness:0.32, metalness:0.9});
+const sbowMat = new THREE.MeshStandardMaterial({color:0x2b2e33, roughness:0.5, metalness:0.1});
+const txMat = new THREE.MeshStandardMaterial({color:0xd8d6d0, roughness:0.45});
+const glowMat = new THREE.MeshBasicMaterial({color:0x4fd18b});
+const chrome = new THREE.MeshStandardMaterial({color:0xd9dde2, roughness:0.2, metalness:1.0});
+const blackM = new THREE.MeshStandardMaterial({color:0x121417, roughness:0.7});
+
+const groups = {};
+function addMesh(id, mat){ const o = new THREE.Mesh(geo(D.meshes[id]), mat); const g = new THREE.Group(); g.add(o); scene.add(g); groups[id]=g; return g; }
+addMesh('A', asa); addMesh('B', asaLight); addMesh('C', asa); addMesh('G', asa); addMesh('D', white);
+addMesh('E', asaLight); addMesh('TX', txMat); addMesh('S', sbowMat); addMesh('R', glowMat);
+
+// EMEO stand-in: brass tube, key cups, neck receiver
+const emeo = new THREE.Group(); scene.add(emeo);
+const tube = new THREE.Mesh(new THREE.CylinderGeometry(25.5, 28, 470, 64), brass); tube.position.set(0, 222, 0); emeo.add(tube);
+[[110,'r'],[150,'r'],[190,'r'],[285,'l'],[325,'l'],[365,'l']].forEach(([y],i)=>{
+  const cup = new THREE.Mesh(new THREE.CylinderGeometry(9, 9, 5, 32), brass); cup.rotation.x = Math.PI/2; cup.position.set(0, y, 29); emeo.add(cup);
+  const pearl = new THREE.Mesh(new THREE.CylinderGeometry(4.5, 4.5, 2, 24), white); pearl.rotation.x = Math.PI/2; pearl.position.set(0, y, 32.2); emeo.add(pearl);
+});
+const rec = new THREE.Mesh(new THREE.CylinderGeometry(9, 12, 20, 32), brass); rec.position.set(0, 465, 0); emeo.add(rec);
+
+// hardware stand-ins on the pads
+const hwGroup = new THREE.Group(); groups['B'].add(hwGroup);
+const Z = new THREE.Vector3(0,0,1);
+function place(obj, p, n){ obj.quaternion.setFromUnitVectors(Z, new THREE.Vector3(...n)); obj.position.set(...p); hwGroup.add(obj); }
+function cylZ(r, h, mat, seg){ const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, seg||32), mat); m.rotation.x = Math.PI/2; m.position.z = h/2; const g = new THREE.Group(); g.add(m); return g; }
+D.hw.forEach(h=>{
+  const g = new THREE.Group();
+  if(h.kind==='toggle'){ g.add(cylZ(5.2, 2.2, chrome, 6)); const s = cylZ(3.0, 5, chrome); s.position.z=2; g.add(s);
+    const lever = new THREE.Mesh(new THREE.CylinderGeometry(1.3, 1.6, 12, 16), chrome); lever.rotation.x = Math.PI/2 - 0.35; lever.position.set(0, 2, 12); g.add(lever); }
+  if(h.kind==='button'){ g.add(cylZ(9.5, 2.0, chrome, 48)); const ring = new THREE.Mesh(new THREE.TorusGeometry(6.6, 0.9, 10, 48), glowMat); ring.position.z = 2.1; g.add(ring);
+    const cap = cylZ(5.6, 2.6, chrome, 40); cap.position.z = 1.2; g.add(cap); }
+  if(h.kind==='djack' || h.kind==='djack6'){ const fl = new THREE.Mesh(new THREE.BoxGeometry(31, 26, 1.6), blackM); fl.position.z = 0.8; g.add(fl);
+    const face = cylZ(10.5, 1.2, chrome, 40); face.position.z = 1.6; g.add(face);
+    const hole = cylZ(h.kind==='djack6' ? 3.3 : 1.9, 0.3, blackM); hole.position.z = 2.85; g.add(hole); }
+  if(h.kind==='usbc'){ const m = new THREE.Mesh(new THREE.BoxGeometry(9.0, 3.2, 0.6), blackM); m.position.z = 0.1; g.add(m); }
+  if(h.kind==='midi'){ const fl = new THREE.Mesh(new THREE.BoxGeometry(31, 26, 1.6), blackM); fl.position.z = 0.8; g.add(fl);
+    const face = cylZ(9.5, 0.4, new THREE.MeshStandardMaterial({color:0x2a2d31, roughness:0.4})); face.position.z = 1.6; g.add(face); }
+  place(g, h.p, h.n);
+});
+
+// parts list
+const partsDef = [
+  ['A','Collar + bend','209 × 153 × 92','#3a3e45'],
+  ['B','Leg with controls','106 × 144 × 92','#4a4f57'],
+  ['C','Bell with screen pocket','173 × 183 × 174','#3a3e45'],
+  ['D','Cover plate (white)','Ø 153 × 7','#e8e6e0'],
+  ['E','TX02 cradle','70 × 54 × 20','#4a4f57'],
+  ['G','Clamp half (Nerd-Sniped)','original','#3a3e45'],
+];
+const list = document.getElementById('parts');
+partsDef.forEach(([id,name,size,col])=>{
+  const lab = document.createElement('label'); lab.className='part';
+  lab.innerHTML = `<input type="checkbox" checked aria-label="Show ${name}"><span class="sw" style="background:${col}"></span><span>${name}</span><span class="size">${size}</span>`;
+  const cb = lab.querySelector('input');
+  cb.addEventListener('change', ()=>{ groups[id].visible = cb.checked; if(id==='E') groups.TX.visible = cb.checked; if(id==='D') groups.R.visible = cb.checked && ledOn; lab.classList.toggle('off', !cb.checked); });
+  list.appendChild(lab);
+});
+let ledOn = true;
+const ledBtn = document.getElementById('led');
+ledBtn.addEventListener('click', ()=>{ ledOn=!ledOn; ledBtn.setAttribute('aria-pressed', ledOn); groups.R.visible = ledOn && groups.D.visible; });
+const saxBtn = document.getElementById('sax'); let saxOn = true;
+saxBtn.addEventListener('click', ()=>{ saxOn=!saxOn; saxBtn.setAttribute('aria-pressed', saxOn); emeo.visible = saxOn; groups.S.visible = saxOn; });
+
+// explode
+const ex = document.getElementById('ex');
+function explode(s){ for(const id in D.explode){ const d = D.explode[id]; if(groups[id]) groups[id].position.set(d[0]*110*s, d[1]*110*s, d[2]*110*s); } }
+ex.addEventListener('input', ()=>explode(+ex.value));
+
+// camera views
+const rimP = new THREE.Vector3(...D.rim.p), rimT = new THREE.Vector3(...D.rim.t);
+const views = {
+  q:{pos:new THREE.Vector3(-620, 420, 720), tgt:new THREE.Vector3(-55,170,0)},
+  p:{pos:new THREE.Vector3(-110, 200, 950), tgt:new THREE.Vector3(-70,150,0)},
+  a:{pos:new THREE.Vector3(-110, 200, -950), tgt:new THREE.Vector3(-70,150,0)},
+  f:{pos:rimP.clone().add(rimT.clone().multiplyScalar(620)).add(new THREE.Vector3(0,60,160)), tgt:rimP.clone()},
+};
+let anim = null;
+function go(k, instant){
+  document.querySelectorAll('.views button').forEach(b=>b.setAttribute('aria-pressed', b.dataset.v===k));
+  const v = views[k];
+  if(instant || matchMedia('(prefers-reduced-motion: reduce)').matches){ camera.position.copy(v.pos); controls.target.copy(v.tgt); return; }
+  anim = {t0:performance.now(), p0:camera.position.clone(), q0:controls.target.clone(), v};
+}
+document.querySelectorAll('.views button').forEach(b=>b.addEventListener('click', ()=>go(b.dataset.v)));
+controls.addEventListener('start', ()=>{ anim=null; });
+
+function resize(){ const w = stage.clientWidth, h = stage.clientHeight; renderer.setSize(w, h); camera.aspect = w/h; camera.updateProjectionMatrix(); }
+window.addEventListener('resize', resize); resize();
+go('q', true);
+if(innerWidth < 640){ camera.position.multiplyScalar(1.35); }
+document.getElementById('load').remove();
+function loop(now){
+  if(anim){ const u = Math.min(1, (now-anim.t0)/900), e = u<.5 ? 4*u*u*u : 1-Math.pow(-2*u+2,3)/2;
+    camera.position.lerpVectors(anim.p0, anim.v.pos, e); controls.target.lerpVectors(anim.q0, anim.v.tgt, e); if(u>=1) anim=null; }
+  controls.update(); renderer.render(scene, camera); requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
